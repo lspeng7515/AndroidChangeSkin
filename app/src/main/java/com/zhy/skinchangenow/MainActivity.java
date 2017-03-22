@@ -1,8 +1,13 @@
 package com.zhy.skinchangenow;
 
+import android.Manifest;
+import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Environment;
+import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.widget.DrawerLayout;
@@ -152,25 +157,8 @@ public class MainActivity extends AppCompatActivity
         switch (id)
         {
             case R.id.id_action_plugin_skinchange:
-                com.zhy.changeskin.SkinManager.getInstance().changeSkin(mSkinPkgPath, "com.imooc.skin_plugin", new com.zhy.changeskin.callback.ISkinChangingCallback()
-                {
-                    @Override
-                    public void onStart()
-                    {
-                    }
+                verifyStoragePermissions(MainActivity.this);
 
-                    @Override
-                    public void onError(Exception e)
-                    {
-                        Toast.makeText(MainActivity.this, "换肤失败:" + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    }
-
-                    @Override
-                    public void onComplete()
-                    {
-                        Toast.makeText(MainActivity.this, "换肤成功", Toast.LENGTH_SHORT).show();
-                    }
-                });
                 break;
             case R.id.id_action_remove_any_skin:
                 com.zhy.changeskin.SkinManager.getInstance().removeAnySkin();
@@ -194,10 +182,74 @@ public class MainActivity extends AppCompatActivity
         return super.onOptionsItemSelected(item);
     }
 
+    private void changNow() {
+        SkinManager.getInstance().changeSkin(mSkinPkgPath, "com.imooc.skin_plugin", new com.zhy.changeskin.callback.ISkinChangingCallback()
+        {
+            @Override
+            public void onStart()
+            {
+            }
+
+            @Override
+            public void onError(Exception e)
+            {
+                Toast.makeText(MainActivity.this, "换肤失败:" + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onComplete()
+            {
+                Toast.makeText(MainActivity.this, "换肤成功", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        switch (requestCode){
+            case REQUEST_EXTERNAL_STORAGE:
+            {
+                if (grantResults.length>0
+                        &&grantResults[0]==PackageManager.PERMISSION_GRANTED){
+                    //permission was granted
+                    changNow();
+                }else {
+                    //permissions denied,boo!
+                }
+            }
+                return;
+        }
+
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+    }
+
     @Override
     protected void onDestroy()
     {
         super.onDestroy();
         SkinManager.getInstance().unregister(this);
+    }
+
+    // Storage Permissions
+    private static final int REQUEST_EXTERNAL_STORAGE = 1;
+    private static String[] PERMISSIONS_STORAGE = {
+            Manifest.permission.READ_EXTERNAL_STORAGE,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE };
+    /**
+     * Checks if the app has permission to write to device storage
+     * If the app does not has permission then the user will be prompted to
+     * grant permissions
+     * @param activity
+     */
+    public static void verifyStoragePermissions(Activity activity) {
+// Check if we have write permission
+        int permission = ActivityCompat.checkSelfPermission(activity,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE);
+
+        if (permission != PackageManager.PERMISSION_GRANTED) {
+// We don't have permission so prompt the user
+            ActivityCompat.requestPermissions(activity, PERMISSIONS_STORAGE,
+                    REQUEST_EXTERNAL_STORAGE);
+        }
     }
 }
